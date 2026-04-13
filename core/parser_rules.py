@@ -29,6 +29,8 @@ QUESTION_PREFIXES: List[str] = [
     "tell me",
     "explain",
     "describe",
+    "Give",
+    "Overview",
 ]
 
 
