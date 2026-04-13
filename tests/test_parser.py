@@ -12,6 +12,9 @@ def test_walk_command_classification() -> None:
 
 def test_question_classification_without_wake_word_stripping() -> None:
     assert classify_instruction_type("what is this") == "question"
+    assert classify_instruction_type("Give me information about Cal Poly Pomona.") == "question"
+    assert classify_instruction_type("What is the next stop?") == "question"
+    assert classify_instruction_type("Can you tell me about the next location") == "question"
     assert classify_instruction_type("spot what is this") == "unknown"
 
 

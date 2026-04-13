@@ -27,10 +27,10 @@ QUESTION_PREFIXES: List[str] = [
     "can",
     "could",
     "tell me",
+    "give me",
     "explain",
     "describe",
-    "Give",
-    "Overview",
+    "overview",
 ]
 
 
@@ -53,17 +53,18 @@ def classify_instruction_type(raw_text: str) -> str:
     if not normalized:
         return "unknown"
 
-    # Walk commands are matched before question heuristics to keep action phrases deterministic.
-    for pattern in WALK_COMMAND_REGEXES:
-        if re.search(pattern, normalized):
-            return "walk_command"
-
     if normalized.endswith("?"):
         return "question"
 
     # Prefix-based fallback catches question phrasing that lacks a trailing question mark.
     if any(normalized.startswith(prefix) for prefix in QUESTION_PREFIXES):
         return "question"
+
+    # Walk commands are matched after question heuristics so question text containing
+    # words like "next" does not accidentally advance the tour.
+    for pattern in WALK_COMMAND_REGEXES:
+        if re.search(pattern, normalized):
+            return "walk_command"
 
     return "unknown"
 
