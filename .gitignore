@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+
+# Test/cache artifacts
+.pytest_cache/
+pytest-cache-files-*/
+
+# Build/distribution
+build/
+dist/
+*.egg-info/
+
+# IDE/editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local vector DB artifact
+chroma_db/
+
+# Runtime artifacts
+artifacts/*
+!artifacts/README.md
+
+# Optional local env files
+.env
+.env.*

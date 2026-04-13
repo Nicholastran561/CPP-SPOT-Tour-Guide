@@ -1,0 +1,11 @@
+faster-whisper
+sounddevice
+soundfile
+keyboard
+numpy
+pandas
+langchain
+langchain-ollama
+langchain-chroma
+chromadb
+pytest
