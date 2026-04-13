@@ -1,8 +1,8 @@
 # SPOT Tour Assistant (Offline Prototype)
 
-This project is a local-only Python prototype for a Boston Dynamics SPOT tour guide assistant.
+This repository contains an offline Python prototype for a Boston Dynamics SPOT tour guide assistant at Cal Poly Pomona that uses local LLM models and a local RAG pipeline backed by `locations.csv`, so users can talk to SPOT and ask tour questions with more relevant, accurate responses.
 
-## What it does
+## Operational Summary
 - Waits in a focused terminal for `SPACE` key toggle.
 - Records audio locally and saves `artifacts/YYYY-MM-DD_HH-MM-SS.wav`.
 - Transcribes with `faster-whisper` and saves `artifacts/YYYY-MM-DD_HH-MM-SS.txt`.
@@ -10,6 +10,21 @@ This project is a local-only Python prototype for a Boston Dynamics SPOT tour gu
 - Dispatches instruction in plain Python controller logic.
 - Answers `question` instructions through local CSV-backed RAG (LangChain + Ollama + ChromaDB),
   while also handling general visitor questions with the local model when tour context is not relevant.
+
+## What is RAG?
+RAG stands for **Retrieval-Augmented Generation**.
+
+In simple terms, instead of only asking the language model to answer from its general training,
+the app first retrieves relevant project knowledge and then gives that context to the model.
+
+In this project, the flow is:
+- retrieve relevant tour facts from the local Chroma index built from `locations.csv`
+- pass those facts (plus current stop context) into the prompt
+- generate a grounded answer with the local Ollama model
+
+This improves answer relevance and consistency for campus-tour questions, while staying fully offline.
+
+For more detailed information on RAG here is an [AWS Article](https://aws.amazon.com/what-is/retrieval-augmented-generation/)
 
 ## Command model
 Parser emits exactly one of:
@@ -38,6 +53,8 @@ Rules:
 - `locations.csv` - source of truth knowledge base
 - `tests/` - pytest suite
 
+Full module/function documentation is available in `CODEBASE_REFERENCE.md`.
+
 ## Windows setup (Python 3.10+)
 ### First-time setup and first run
 1. Create and activate venv:
@@ -53,6 +70,7 @@ python -m pip install -r requirements.txt
 ```powershell
 ollama serve
 ```
+If Ollama is configured to launch automatically at computer startup, this command may not be needed.
 4. Pull local models once (while online), then use offline:
 ```powershell
 ollama pull llama3.1:8b
@@ -81,6 +99,7 @@ Each time you start working:
 ```powershell
 ollama serve
 ```
+If Ollama is already running from startup, you can skip this step.
 3. Start app:
 ```powershell
 python main.py
@@ -106,6 +125,20 @@ python rebuild_chroma_from_csv.py
   - `short_description`
   - `long_description`
   - `tags`
+- Column meaning:
+  - `id`: unique numeric row ID used as stable vector document ID.
+  - `title`: short label for the fact row.
+  - `route_order`: integer stop index in fixed tour sequence.
+  - `location_name`: canonical stop name.
+  - `aliases`: alternate names (recommended pipe-separated list).
+  - `short_description`: concise one-line summary.
+  - `long_description`: detailed explanation/facts.
+  - `tags`: retrieval keywords (recommended comma-separated list).
+- Example CSV row:
+```csv
+id,title,route_order,location_name,aliases,short_description,long_description,tags
+101,Building overview,3,Student Center East,SCE|Student Center East|Center East,Student Center East is a major campus hub.,Student Center East includes dining spaces student services and common gathering areas for visitors and students.,"dining,student-services,hub"
+```
 - Chroma index is generated artifact in `chroma_db`.
 - Index does **not** auto-update on CSV edits.
 - After CSV changes, rerun:
@@ -126,5 +159,6 @@ Pytest is configured via `pytest.ini` to:
 ## Current extension points
 - Future SPOT API integration: add robot control calls in `core/controller.py` walk-command branch.
 - Future TTS integration: add speech output after question answers in `core/controller.py`.
+- Future context window support: keep a short sliding history of recent Q/A turns (for follow-up questions) and pass it into `rag/rag_query.py` + `rag/rag_chain.py` from `main.py`.
 
 No real SPOT control and no TTS are implemented in this prototype.
