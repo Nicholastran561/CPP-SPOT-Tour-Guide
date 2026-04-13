@@ -19,7 +19,6 @@ Parser emits exactly one of:
 - `unknown`
 
 Rules:
-- Wake word `spot` is stripped before classification.
 - `end_tour` triggers only on exact phrase `end the tour spot`.
 - `walk_command` means move to the next fixed stop only.
 - `unknown` performs no action except fallback logging/printing.

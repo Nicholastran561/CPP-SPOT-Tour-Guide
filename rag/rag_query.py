@@ -110,7 +110,6 @@ class RagService:
             response = self.chain.invoke(
                 {
                     "current_location_index": current_location_index,
-                    "current_route_order": current_location_index,
                     "current_location_name": current_location_name,
                     "total_stops": self.total_stops,
                     "retrieved_context": context,

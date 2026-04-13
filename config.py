@@ -45,7 +45,6 @@ RAG_RETRIEVER_K = 4
 RAG_LLM_TEMPERATURE = 0.0
 
 # Parser settings
-WAKE_WORD = "spot"
 END_TOUR_EXACT_PHRASE = "end the tour spot"
 
 # Artifact naming

@@ -23,7 +23,6 @@ def build_prompt_template() -> ChatPromptTemplate:
             (
                 "human",
                 "current_location_index: {current_location_index}\n"
-                "current_route_order: {current_route_order}\n"
                 "total_stops_in_tour: {total_stops}\n"
                 "current_location_name: {current_location_name}\n\n"
                 "retrieved_context:\n{retrieved_context}\n\n"

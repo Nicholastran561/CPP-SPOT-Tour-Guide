@@ -27,7 +27,6 @@ The parser must emit exactly one of:
 - `unknown`
 
 Behavior:
-- Strip the wake word `spot` before classification.
 - `end_tour` should trigger only on the exact phrase `end the tour spot`.
 - `walk_command` means advance to the next fixed tour stop only.
 - `unknown` should produce no action other than a fallback log/print.

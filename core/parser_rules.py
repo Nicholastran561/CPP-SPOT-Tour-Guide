@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import Dict, List
 
-from config import END_TOUR_EXACT_PHRASE, WAKE_WORD
+from config import END_TOUR_EXACT_PHRASE
 
 INSTRUCTION_TYPES = {"question", "walk_command", "end_tour", "unknown"}
 
@@ -40,13 +40,6 @@ def normalize_text(text: str) -> str:
     return cleaned
 
 
-def strip_wake_word(text: str) -> str:
-    """Remove standalone wake word tokens from the text."""
-    stripped = re.sub(rf"\b{re.escape(WAKE_WORD)}\b", "", text)
-    stripped = re.sub(r"\s+", " ", stripped).strip()
-    return stripped
-
-
 def classify_instruction_type(raw_text: str) -> str:
     """Classify raw transcript into one supported instruction type."""
     normalized = normalize_text(raw_text)
@@ -55,21 +48,19 @@ def classify_instruction_type(raw_text: str) -> str:
     if normalized == END_TOUR_EXACT_PHRASE:
         return "end_tour"
 
-    # Wake word is removed before general classification.
-    without_wake = strip_wake_word(normalized)
-    if not without_wake:
+    if not normalized:
         return "unknown"
 
     # Walk commands are matched before question heuristics to keep action phrases deterministic.
     for pattern in WALK_COMMAND_REGEXES:
-        if re.search(pattern, without_wake):
+        if re.search(pattern, normalized):
             return "walk_command"
 
-    if without_wake.endswith("?"):
+    if normalized.endswith("?"):
         return "question"
 
     # Prefix-based fallback catches question phrasing that lacks a trailing question mark.
-    if any(without_wake.startswith(prefix) for prefix in QUESTION_PREFIXES):
+    if any(normalized.startswith(prefix) for prefix in QUESTION_PREFIXES):
         return "question"
 
     return "unknown"
