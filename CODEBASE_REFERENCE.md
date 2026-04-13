@@ -19,7 +19,7 @@ Runtime flow:
 2. Record microphone audio when `SPACE` is pressed (`core/audio_recorder.py`).
 3. Save audio artifact (`.wav`) under `artifacts/`.
 4. Transcribe audio with `faster-whisper` (`core/transcriber.py`) and save transcript (`.txt`).
-5. Parse transcript into exactly one instruction type (`core/parser_rules.py`) and save instruction payload (`.json`) via `core/json_agent.py`.
+5. Parse transcript into exactly one instruction type (`core/parser_rules.py`) and save instruction payload (`.json`) via `core/instruction_json.py`.
 6. Dispatch instruction in `core/controller.py`.
 7. For `question`, query local CSV-backed RAG (Chroma + Ollama via LangChain in `rag/` modules).
 8. Repeat until exact phrase `end the tour spot` is spoken.
@@ -289,7 +289,7 @@ Key functions:
   - Returns `{instruction_type, raw_text, parsed_data}`.
   - `parsed_data` is currently empty by design, but reserved for future structured extraction.
 
-### `core/json_agent.py`
+### `core/instruction_json.py`
 
 Purpose: build and persist instruction JSON artifacts.
 

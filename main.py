@@ -27,7 +27,7 @@ from config import (
     WHISPER_MODEL_SIZE,
 )
 from core.controller import handle_instruction
-from core.json_agent import build_instruction_json, save_instruction_json
+from core.instruction_json import build_instruction_json, save_instruction_json
 from core.parser_rules import parse_instruction
 from rag.rag_query import RagService, RagUnavailableError
 from core.transcriber import TranscriptionError, transcribe_audio

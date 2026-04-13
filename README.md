@@ -44,7 +44,7 @@ Rules:
 - `core/audio_recorder.py` - SPACE-toggle audio capture
 - `core/transcriber.py` - faster-whisper transcription
 - `core/parser_rules.py` - centralized parser rules
-- `core/json_agent.py` - instruction JSON creation/persistence
+- `core/instruction_json.py` - instruction JSON creation/persistence
 - `core/controller.py` - instruction dispatch and tour state updates
 - `rag/rag_loader.py` - CSV load and Document conversion
 - `rag/rag_chain.py` - `ChatPromptTemplate` construction
