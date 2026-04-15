@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-from core.audio_recorder import RecordingError, record_until_space_toggle
+from core.audio_recorder import ExitRequestedError, RecordingError, record_until_space_toggle
 from config import (
     AUDIO_CHANNELS,
     AUDIO_DTYPE,
@@ -82,6 +82,9 @@ def main() -> None:
                 channels=AUDIO_CHANNELS,
                 dtype=AUDIO_DTYPE,
             )
+        except ExitRequestedError:
+            LOGGER.info("ESC pressed while waiting to record. Exiting main loop.")
+            break
         except RecordingError as exc:
             LOGGER.error("Recording failed: %s", exc)
             continue

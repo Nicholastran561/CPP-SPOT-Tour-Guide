@@ -3,7 +3,7 @@
 This repository contains an offline Python prototype for a Boston Dynamics SPOT tour guide assistant at Cal Poly Pomona that uses local LLM models and a local RAG pipeline backed by `locations.csv`, so users can talk to SPOT and ask tour questions with more relevant, accurate responses.
 
 ## Operational Summary
-- Waits in a focused terminal for `SPACE` key toggle.
+- Waits in a focused terminal for `SPACE` to record or `ESC` to exit while idle.
 - Records audio locally and saves `artifacts/YYYY-MM-DD_HH-MM-SS.wav`.
 - Transcribes with `faster-whisper` and saves `artifacts/YYYY-MM-DD_HH-MM-SS.txt`.
 - Parses transcript into one instruction type and saves `artifacts/YYYY-MM-DD_HH-MM-SS.json`.

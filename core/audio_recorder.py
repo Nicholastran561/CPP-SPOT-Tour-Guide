@@ -19,6 +19,10 @@ class RecordingError(RuntimeError):
     """Raised when audio recording cannot be completed."""
 
 
+class ExitRequestedError(RuntimeError):
+    """Raised when ESC is pressed while waiting to start recording."""
+
+
 def _ensure_input_device_available() -> None:
     """Validate that at least one input device is available."""
     # Fail early with a clear message instead of opening a stream that cannot record.
@@ -26,6 +30,18 @@ def _ensure_input_device_available() -> None:
     has_input = any(device.get("max_input_channels", 0) > 0 for device in devices)
     if not has_input:
         raise RecordingError("No microphone/input device was detected.")
+
+
+def _wait_for_start_key() -> None:
+    """Wait for SPACE to start recording or ESC to exit the application."""
+    while True:
+        event = keyboard.read_event()
+        if event.event_type != keyboard.KEY_DOWN:
+            continue
+        if event.name == "space":
+            return
+        if event.name == "esc":
+            raise ExitRequestedError("ESC pressed while waiting to start recording.")
 
 
 def record_until_space_toggle(
@@ -37,8 +53,8 @@ def record_until_space_toggle(
     """Record audio between two SPACE key presses and save a WAV file."""
     _ensure_input_device_available()
 
-    LOGGER.info("Press SPACE to start recording.")
-    keyboard.wait("space")
+    LOGGER.info("Press SPACE to start recording (or ESC to exit).")
+    _wait_for_start_key()
     LOGGER.info("Recording started. Press SPACE again to stop.")
 
     stop_event = threading.Event()
