@@ -38,6 +38,18 @@ Rules:
 - `walk_command` means move to the next fixed stop only.
 - `unknown` performs no action except fallback logging/printing.
 
+### Parser keywords and phrase rules
+- Walk-command keywords/phrases: `next`, `continue`, `move on`, `walk`, `advance`, `keep going`, `go ahead`, `let's go`.
+- Question prefixes: `what`, `where`, `when`, `why`, `how`, `who`, `is`, `are`, `can`, `could`, `tell me`, `give me`, `explain`, `describe`, `overview`.
+- Question punctuation rule: any transcript ending in `?` is treated as `question`.
+- End-tour exact phrase: only `end the tour spot` maps to `end_tour`.
+
+### How to end the tour by voice recording
+1. Press `SPACE` to start recording.
+2. Clearly say: `end the tour spot`.
+3. Press `SPACE` again to stop recording and process the command.
+4. The app exits only when that exact phrase is recognized.
+
 ## Files
 - `main.py` - main loop and artifact orchestration
 - `config.py` - project settings

@@ -112,6 +112,24 @@ If Ollama is already running from startup, you can skip `ollama serve`.
 3. Press `SPACE` again to stop recording and process input.
 4. Review terminal output.
 
+#### 2.2.1 Parser keywords and phrase rules
+
+- Walk-command keywords/phrases:
+  - `next`, `continue`, `move on`, `walk`, `advance`, `keep going`, `go ahead`, `let's go`
+- Question prefixes:
+  - `what`, `where`, `when`, `why`, `how`, `who`, `is`, `are`, `can`, `could`, `tell me`, `give me`, `explain`, `describe`, `overview`
+- Question punctuation:
+  - Any transcript ending with `?` is classified as `question`.
+- End-tour exact phrase:
+  - Only `end the tour spot` is classified as `end_tour`.
+
+#### 2.2.2 Ending the tour with a recording
+
+1. Press `SPACE` to start recording.
+2. Say the exact phrase `end the tour spot`.
+3. Press `SPACE` again to stop recording.
+4. The parser emits `end_tour`, and `main.py` exits the loop.
+
 #### 2.3 Expected artifacts per interaction
 
 Saved in `artifacts/` with the same timestamp stem:
