@@ -1,4 +1,4 @@
-              id,title,route_order,location_name,aliases,short_description,long_description,tags
+id,title,route_order,location_name,aliases,short_description,long_description,tags
 1,Lobby Overview,0,Lobby,"entrance|main lobby|entry hall","Main welcome area","The lobby is the first stop where visitors arrive, orient themselves, and hear a quick overview of the facility.","welcome|entry|orientation"
 2,Lobby Capacity Details,0,Lobby,"entrance|main lobby|entry hall","Lobby usage detail","The lobby is also used for tour staging, where groups gather before moving to the next stop.","operations|tour-flow|orientation"
 3,Reception Overview,1,Reception Desk,"front desk|reception|check-in desk|welcome desk","Visitor check-in area","This is where guests are greeted, checked in, and directed to the correct area for meetings and tours.","checkin|guests|entry"
