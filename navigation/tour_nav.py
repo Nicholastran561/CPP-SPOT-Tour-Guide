@@ -608,75 +608,87 @@ class GraphNavInterface(object):
             print(e)
             print(traceback.format_exc())
 
-def get_waypoints(map_directory):
-    """List the waypoint ids and edge ids of the graph currently on the
-    robot."""
+class GraphNavWrapper():
+    def __init__(self, robot = None, map_path: str = None):
+        """
+        Alows you to interface with SPOT GraphNav menu options. Only supports navigate_to. 
+        =========================================================================
+        On initializing, robot is authencated
 
-    graph_filename = os.path.join(map_directory, 'graph')
-    
-    if not os.path.exists(graph_filename):
-        print(f"Graph file not found: {graph_filename}")
-        return []
+        Args:
+            robot (Robot, optional): option to pass in Robot. Defaults to None.
+            map_path (str, optional): graph file path (path to graph directory). Defaults to None.
 
-    # Read the graph file
-    with open(graph_filename, 'rb') as f:
-        data = f.read()
-        graph = map_pb2.Graph()
-        graph.ParseFromString(data)
-    
+        """
+        if(robot == None):
+            sdk = bosdyn.client.create_standard_sdk('GraphNavClient')
+            self._robot = sdk.create_robot("192.168.80.3")   
+        else: 
+            self._robot = robot
         
-    # Extract ID and names
-    waypoints = {wp.annotations.name: wp.id for wp in graph.waypoints}
-    return waypoints
+        bosdyn.client.util.authenticate(self._robot)
+        if(map_path == None):
+            self._map_path = "./maps/downloaded_graph"
+        else:
+            self._map_path = map_path
+            
 
-def navitage_to(robot, waypoint: str):
-    """Tell spot to navigate to a waypoint on tour map
+        #### get waypoint names and ids from map directory
+        graph_filename = os.path.join(self._map_path, 'graph')
+        
+        if not os.path.exists(graph_filename):
+            print(f"Graph file not found: {graph_filename}")
+            return []
 
-    Args:
-        waypoint (str): waypoint id in `downloaded_map`
+        with open(graph_filename, 'rb') as f:
+            data = f.read()
+            graph = map_pb2.Graph()
+            graph.ParseFromString(data)
+         
+        self.waypoints = {wp.annotations.name: wp.id for wp in graph.waypoints}
 
-    Returns:
-        bool: False if Failed
-    """
-    MAP_PATH = "./maps/downloaded_graph"
-    
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        '-g', '--use-gps', action='store_true', help=
-        'Enable GPS commands for this robot. The robot must have a GPS payload. The map must have been recorded with GPS.'
-    )
-    bosdyn.client.util.add_base_arguments(parser)
-    options = parser.parse_args()
 
-    # Setup and authenticate the robot.
-    sdk = bosdyn.client.create_standard_sdk('GraphNavClient')
-    robot = sdk.create_robot(options.hostname)
-    bosdyn.client.util.authenticate(robot)
+    def navitage_to(self, waypoint, use_gps=False):
+        """Tell spot to navigate to a waypoint on tour map
 
-    graph_nav_command_line = GraphNavInterface(robot, MAP_PATH, options.use_gps)
-    lease_client = robot.ensure_client(LeaseClient.default_service_name)
-    
-    waypoints: dict = get_waypoints(MAP_PATH)
-    try:
-        with LeaseKeepAlive(lease_client, must_acquire=True, return_at_exit=True):
-            try:
-                if(waypoint not in waypoints): 
-                    print("Unable to find waypoint names:ids")
-                    return False
-                    
-                graph_nav_command_line.run(f"6 {waypoints[waypoint]}")
-                return True
-            except Exception as exc:  # pylint: disable=broad-except
-                print(exc)
-                print('Graph nav command line client threw an error.')
-                return False
-    except ResourceAlreadyClaimedError:
-        print(
-            'The robot\'s lease is currently in use. Check for a tablet connection or try again in a few seconds.'
+        Args:
+            waypoint (str): waypoint id in `downloaded_map`
+
+        Returns:
+            bool: False if Failed
+        """
+        
+        parser = argparse.ArgumentParser(description=__doc__)
+        parser.add_argument(
+            '-g', '--use-gps', action='store_true', help=
+            'Enable GPS commands for this robot. The robot must have a GPS payload. The map must have been recorded with GPS.'
         )
-        return False
+        bosdyn.client.util.add_base_arguments(parser)
+        options = parser.parse_args()
+
+        # Setup and authenticate the robot.
+        graph_nav_command_line = GraphNavInterface(self._robot, self._map_path, options.use_gps)
+        lease_client = self._robot.ensure_client(LeaseClient.default_service_name)
+        
+        
+        try:
+            with LeaseKeepAlive(lease_client, must_acquire=True, return_at_exit=True):
+                try:
+                    graph_nav_command_line.run(f"6 {self.waypoints[waypoint]}")
+                    return True
+                except Exception as exc:  # pylint: disable=broad-except
+                    print(exc)
+                    print('Graph nav command line client threw an error.')
+                    return False
+                
+        except ResourceAlreadyClaimedError:
+            print(
+                'The robot\'s lease is currently in use. Check for a tablet connection or try again in a few seconds.'
+            )
+            return False
 
 
 if __name__ == '__main__':
-    if not navitage_to("waypoint_1"):
+    G = GraphNavWrapper()
+    if not G.navitage_to("waypoint_1"):
         sys.exit(1)

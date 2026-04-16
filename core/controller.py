@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from typing import Callable, Dict
-
+from navigation.tour_nav import GraphNavWrapper
 LOGGER = logging.getLogger(__name__)
 
 
