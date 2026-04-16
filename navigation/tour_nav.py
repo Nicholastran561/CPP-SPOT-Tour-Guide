@@ -657,19 +657,10 @@ class GraphNavWrapper():
         Returns:
             bool: False if Failed
         """
-        
-        parser = argparse.ArgumentParser(description=__doc__)
-        parser.add_argument(
-            '-g', '--use-gps', action='store_true', help=
-            'Enable GPS commands for this robot. The robot must have a GPS payload. The map must have been recorded with GPS.'
-        )
-        bosdyn.client.util.add_base_arguments(parser)
-        options = parser.parse_args()
 
         # Setup and authenticate the robot.
-        graph_nav_command_line = GraphNavInterface(self._robot, self._map_path, options.use_gps)
+        graph_nav_command_line = GraphNavInterface(self._robot, self._map_path, use_gps)
         lease_client = self._robot.ensure_client(LeaseClient.default_service_name)
-        
         
         try:
             with LeaseKeepAlive(lease_client, must_acquire=True, return_at_exit=True):
