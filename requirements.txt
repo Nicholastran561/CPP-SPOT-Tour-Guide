@@ -9,3 +9,4 @@ langchain-ollama
 langchain-chroma
 chromadb
 pytest
+bosdyn-client >= 4.0
