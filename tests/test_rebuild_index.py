@@ -15,6 +15,7 @@ def test_rebuild_index_calls_chroma_with_stable_ids(monkeypatch) -> None:
                 {
                     "id": 7,
                     "title": "Test Fact 7",
+                    "fact_scope": "tour_stop",
                     "route_order": 7,
                     "location_name": "Test",
                     "aliases": "alias",

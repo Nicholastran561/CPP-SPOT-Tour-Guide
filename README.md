@@ -128,10 +128,12 @@ python rebuild_chroma_from_csv.py
 - CSV supports multiple fact rows per location using:
   - `id` (stable numeric row/document ID)
   - `title` (short fact label for readability)
+  - `fact_scope` (`tour_stop` for route stops, `general` for school-wide facts)
   - `route_order` (tour stop order used for temporal tour context)
 - Required CSV columns are:
   - `id`
   - `title`
+  - `fact_scope`
   - `route_order`
   - `location_name`
   - `aliases`
@@ -141,7 +143,8 @@ python rebuild_chroma_from_csv.py
 - Column meaning:
   - `id`: unique numeric row ID used as stable vector document ID.
   - `title`: short label for the fact row.
-  - `route_order`: integer stop index in fixed tour sequence.
+  - `fact_scope`: either `tour_stop` or `general`. Only `tour_stop` rows count as tour stops.
+  - `route_order`: integer stop index in fixed tour sequence. Use `-1` for `general` facts.
   - `location_name`: canonical stop name.
   - `aliases`: alternate names (recommended pipe-separated list).
   - `short_description`: concise one-line summary.
@@ -149,8 +152,9 @@ python rebuild_chroma_from_csv.py
   - `tags`: retrieval keywords (recommended comma-separated list).
 - Example CSV row:
 ```csv
-id,title,route_order,location_name,aliases,short_description,long_description,tags
-101,Building overview,3,Student Center East,SCE|Student Center East|Center East,Student Center East is a major campus hub.,Student Center East includes dining spaces student services and common gathering areas for visitors and students.,"dining,student-services,hub"
+id,title,fact_scope,route_order,location_name,aliases,short_description,long_description,tags
+101,Building overview,tour_stop,3,Student Center East,SCE|Student Center East|Center East,Student Center East is a major campus hub.,Student Center East includes dining spaces student services and common gathering areas for visitors and students.,"dining,student-services,hub"
+201,University overview,general,-1,Cal Poly Pomona,CPP|Cal Poly Pomona|the university,Cal Poly Pomona is a public polytechnic university.,Cal Poly Pomona is known for learn-by-doing education and career-focused academic programs.,"general,university,overview"
 ```
 - Chroma index is generated artifact in `chroma_db`.
 - Index does **not** auto-update on CSV edits.

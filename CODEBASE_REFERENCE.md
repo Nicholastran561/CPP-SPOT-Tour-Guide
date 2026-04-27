@@ -418,7 +418,7 @@ Purpose: CSV schema validation and conversion to retrievable documents.
 Constants:
 
 - `REQUIRED_COLUMNS` includes:
-  - `id`, `title`, `route_order`, `location_name`, `aliases`, `short_description`, `long_description`, `tags`
+  - `id`, `title`, `fact_scope`, `route_order`, `location_name`, `aliases`, `short_description`, `long_description`, `tags`
 
 Classes:
 
@@ -430,14 +430,16 @@ Key functions:
   - Validates file exists.
   - Reads CSV with pandas.
   - Enforces required columns.
+  - Validates `fact_scope` values are `tour_stop` or `general`.
 - `dataframe_to_documents(df) -> Tuple[List[Document], List[str]]`
   - Converts each row to one LangChain `Document`.
   - Uses stable document ID derived from row `id`.
   - Packs major row fields into `page_content` and metadata.
+  - Stores `general` facts with route order `-1` so they are retrievable but not treated as tour stops.
 - `get_location_name_for_route_order(df, route_order) -> str`
-  - Returns matching location or `"Unknown"`.
+  - Returns matching `tour_stop` location or `"Unknown"`.
 - `get_total_stops(df) -> int`
-  - Unique `route_order` count.
+  - Unique `route_order` count for `tour_stop` rows only.
 
 ### `rag/rag_chain.py`
 
@@ -541,6 +543,7 @@ Required schema:
 
 - `id`
 - `title`
+- `fact_scope`
 - `route_order`
 - `location_name`
 - `aliases`
@@ -557,9 +560,13 @@ Column definitions:
 - `title`
   - Short human-readable label for the fact row.
   - Example style: `Building overview`, `Hours and access`.
+- `fact_scope`
+  - Either `tour_stop` for route-stop facts or `general` for school-wide facts.
+  - Only `tour_stop` rows count toward the fixed tour sequence.
 - `route_order`
   - Integer stop index used for fixed tour sequencing and current-stop context.
   - Multiple rows may share the same `route_order` for multiple facts at one stop.
+  - Use `-1` for `general` facts.
 - `location_name`
   - Canonical stop/location name spoken or shown to users.
 - `aliases`
@@ -576,8 +583,9 @@ Column definitions:
 Example CSV:
 
 ```csv
-id,title,route_order,location_name,aliases,short_description,long_description,tags
-101,Building overview,3,Student Center East,SCE|Student Center East|Center East,Student Center East is a major campus hub.,Student Center East includes dining spaces student services and common gathering areas for visitors and students.,"dining,student-services,hub"
+id,title,fact_scope,route_order,location_name,aliases,short_description,long_description,tags
+101,Building overview,tour_stop,3,Student Center East,SCE|Student Center East|Center East,Student Center East is a major campus hub.,Student Center East includes dining spaces student services and common gathering areas for visitors and students.,"dining,student-services,hub"
+201,University overview,general,-1,Cal Poly Pomona,CPP|Cal Poly Pomona|the university,Cal Poly Pomona is a public polytechnic university.,Cal Poly Pomona is known for learn-by-doing education and career-focused academic programs.,"general,university,overview"
 ```
 
 Indexing behavior:

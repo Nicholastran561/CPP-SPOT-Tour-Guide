@@ -1,4 +1,4 @@
-from core.controller import handle_instruction
+from core.controller import RAG_OUTPUT_SEPARATOR, handle_instruction
 
 
 def _dummy_qna(question: str, idx: int) -> str:
@@ -37,6 +37,20 @@ def test_controller_mirrors_presented_text_to_narration_handler() -> None:
 
     assert result.updated_location_index == 1
     assert spoken == ["Answer: q=what is this, idx=1"]
+
+
+def test_controller_prints_separated_rag_answer(capsys) -> None:
+    handle_instruction(
+        instruction={"instruction_type": "question", "raw_text": "what is this"},
+        current_location_index=1,
+        question_handler=_dummy_qna,
+    )
+
+    captured = capsys.readouterr()
+
+    assert "RAG ANSWER" in captured.out
+    assert RAG_OUTPUT_SEPARATOR in captured.out
+    assert "q=what is this, idx=1" in captured.out
 
 
 def test_controller_ignores_narration_handler_failure() -> None:

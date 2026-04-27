@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Callable, Dict
 
 LOGGER = logging.getLogger(__name__)
+RAG_OUTPUT_SEPARATOR = "=" * 72
 
 
 @dataclass
@@ -31,7 +32,11 @@ def handle_instruction(
         # All question answering is delegated to the RAG service passed in by main.
         answer = question_handler(raw_text, current_location_index)
         LOGGER.info("RAG answer: %s", answer)
-        _present_text(f"Answer: {answer}", narration_handler)
+        _present_text(
+            f"Answer: {answer}",
+            narration_handler,
+            console_text=_format_rag_answer_for_console(answer),
+        )
         return ControllerResult(current_location_index, False)
 
     if instruction_type == "walk_command":
@@ -53,9 +58,27 @@ def handle_instruction(
     return ControllerResult(current_location_index, False)
 
 
-def _present_text(text: str, narration_handler: Callable[[str], None] | None) -> None:
+def _format_rag_answer_for_console(answer: str) -> str:
+    """Format a RAG answer for readable console output."""
+    return "\n".join(
+        [
+            "",
+            RAG_OUTPUT_SEPARATOR,
+            "RAG ANSWER",
+            RAG_OUTPUT_SEPARATOR,
+            answer,
+            RAG_OUTPUT_SEPARATOR,
+        ]
+    )
+
+
+def _present_text(
+    text: str,
+    narration_handler: Callable[[str], None] | None,
+    console_text: str | None = None,
+) -> None:
     """Print guide text and optionally mirror it to the TTS integration."""
-    print(text)
+    print(console_text if console_text is not None else text)
     if narration_handler is None:
         return
 
