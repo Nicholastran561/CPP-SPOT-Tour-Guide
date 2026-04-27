@@ -29,6 +29,31 @@ def test_document_conversion_stable_ids() -> None:
     assert ids[0] == str(int(df.iloc[0]["id"]))
 
 
+def test_document_content_uses_human_stop_numbers() -> None:
+    df = pd.DataFrame(
+        [
+            {
+                "id": 1,
+                "title": "Lobby",
+                "fact_scope": "tour_stop",
+                "route_order": 0,
+                "location_name": "Lobby",
+                "aliases": "entrance",
+                "short_description": "short",
+                "long_description": "long",
+                "tags": "tag",
+            },
+        ]
+    )
+
+    docs, _ids = dataframe_to_documents(df)
+
+    assert "Tour Stop Number: 1" in docs[0].page_content
+    assert "Route Order: 0" not in docs[0].page_content
+    assert docs[0].metadata["route_order"] == 0
+    assert docs[0].metadata["tour_stop_number"] == 1
+
+
 def test_general_facts_do_not_count_as_tour_stops() -> None:
     df = pd.DataFrame(
         [

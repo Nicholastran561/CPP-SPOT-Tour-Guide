@@ -16,6 +16,7 @@ from rag.rag_chain import build_prompt_template
 from rag.rag_loader import CsvDataError, get_location_name_for_route_order, get_total_stops, load_locations_csv
 
 LOGGER = logging.getLogger(__name__)
+RAG_CONTEXT_OUTPUT_SEPARATOR = "-" * 72
 
 
 class RagUnavailableError(RuntimeError):
@@ -50,6 +51,23 @@ def format_retrieved_context(docs: Iterable[Document]) -> str:
     for idx, doc in enumerate(docs, start=1):
         chunks.append(f"[{idx}] {doc.page_content}")
     return "\n\n".join(chunks)
+
+
+def print_retrieved_context(context: str) -> None:
+    """Print retrieved RAG context for operator debugging."""
+    context_text = context if context else "(no retrieved context)"
+    print(
+        "\n".join(
+            [
+                "",
+                RAG_CONTEXT_OUTPUT_SEPARATOR,
+                "RETRIEVED CONTEXT",
+                RAG_CONTEXT_OUTPUT_SEPARATOR,
+                context_text,
+                RAG_CONTEXT_OUTPUT_SEPARATOR,
+            ]
+        )
+    )
 
 
 class RagService:
@@ -102,6 +120,7 @@ class RagService:
         # Current location context is promoted to the front to improve local relevance.
         prioritized_docs = prioritize_current_location(docs, current_location_index)
         context = format_retrieved_context(prioritized_docs) if prioritized_docs else ""
+        print_retrieved_context(context)
         current_location_name = get_location_name_for_route_order(
             self.locations_df, current_location_index
         )
@@ -109,7 +128,7 @@ class RagService:
         try:
             response = self.chain.invoke(
                 {
-                    "current_location_index": current_location_index,
+                    "current_stop_number": current_location_index + 1,
                     "current_location_name": current_location_name,
                     "total_stops": self.total_stops,
                     "retrieved_context": context,

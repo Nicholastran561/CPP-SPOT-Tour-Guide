@@ -65,6 +65,12 @@ def _route_order_for_row(row: dict) -> int:
     return int(row["route_order"])
 
 
+def _tour_stop_number(fact_scope: str, route_order: int) -> str:
+    if fact_scope != FACT_SCOPE_TOUR_STOP:
+        return "Not applicable"
+    return str(route_order + 1)
+
+
 def dataframe_to_documents(df: pd.DataFrame) -> Tuple[List[Document], List[str]]:
     """Convert dataframe rows into LangChain Documents with stable IDs."""
     documents: List[Document] = []
@@ -75,6 +81,7 @@ def dataframe_to_documents(df: pd.DataFrame) -> Tuple[List[Document], List[str]]
         title = str(row["title"]).strip()
         fact_scope = _normalize_fact_scope(row["fact_scope"])
         route_order = _route_order_for_row(row)
+        tour_stop_number = _tour_stop_number(fact_scope, route_order)
         # Stable IDs are row-level so each location can have multiple independent facts.
         doc_id = str(row_id)
         ids.append(doc_id)
@@ -84,7 +91,7 @@ def dataframe_to_documents(df: pd.DataFrame) -> Tuple[List[Document], List[str]]
             f"ID: {row_id}\n"
             f"Title: {title}\n"
             f"Fact Scope: {fact_scope}\n"
-            f"Route Order: {route_order}\n"
+            f"Tour Stop Number: {tour_stop_number}\n"
             f"Location Name: {row['location_name']}\n"
             f"Aliases: {row['aliases']}\n"
             f"Short Description: {row['short_description']}\n"
@@ -97,6 +104,7 @@ def dataframe_to_documents(df: pd.DataFrame) -> Tuple[List[Document], List[str]]
             "title": title,
             "fact_scope": fact_scope,
             "route_order": route_order,
+            "tour_stop_number": route_order + 1 if fact_scope == FACT_SCOPE_TOUR_STOP else 0,
             "location_name": str(row["location_name"]),
             "aliases": str(row["aliases"]),
             "tags": str(row["tags"]),

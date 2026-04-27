@@ -43,7 +43,7 @@ def handle_instruction(
         # Fixed-sequence tour behavior: each walk command advances exactly one stop.
         next_index = current_location_index + 1
         LOGGER.info("Moving to next tour stop. current_location_index=%s", next_index)
-        _present_text(f"Moved to next stop. current_location_index={next_index}", narration_handler)
+        _present_text(f"Moved to stop {next_index + 1}.", narration_handler)
         # Future extension point: trigger navigation side effects before committing index.
         return ControllerResult(next_index, False)
 
