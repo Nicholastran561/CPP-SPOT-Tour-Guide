@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import Dict, List
 
-from config import END_TOUR_EXACT_PHRASE
+from config import ASSUME_UNKNOWN_INSTRUCTIONS_ARE_QUESTIONS, END_TOUR_EXACT_PHRASE
 
 INSTRUCTION_TYPES = {"question", "walk_command", "end_tour", "unknown"}
 
@@ -42,8 +42,14 @@ def normalize_text(text: str) -> str:
     return cleaned
 
 
-def classify_instruction_type(raw_text: str) -> str:
+def classify_instruction_type(
+    raw_text: str,
+    assume_unknown_as_question: bool | None = None,
+) -> str:
     """Classify raw transcript into one supported instruction type."""
+    if assume_unknown_as_question is None:
+        assume_unknown_as_question = ASSUME_UNKNOWN_INSTRUCTIONS_ARE_QUESTIONS
+
     normalized = normalize_text(raw_text)
 
     # Exact phrase requirement is checked against original normalized text.
@@ -66,12 +72,21 @@ def classify_instruction_type(raw_text: str) -> str:
         if re.search(pattern, normalized):
             return "walk_command"
 
+    if assume_unknown_as_question:
+        return "question"
+
     return "unknown"
 
 
-def parse_instruction(raw_text: str) -> Dict[str, object]:
+def parse_instruction(
+    raw_text: str,
+    assume_unknown_as_question: bool | None = None,
+) -> Dict[str, object]:
     """Parse raw transcript into a minimal instruction payload."""
-    instruction_type = classify_instruction_type(raw_text)
+    instruction_type = classify_instruction_type(
+        raw_text,
+        assume_unknown_as_question=assume_unknown_as_question,
+    )
     parsed_data: Dict[str, object] = {}
     return {
         "instruction_type": instruction_type,

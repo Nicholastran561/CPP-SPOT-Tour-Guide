@@ -46,6 +46,8 @@ RAG_LLM_TEMPERATURE = 0.0
 
 # Parser settings
 END_TOUR_EXACT_PHRASE = "end the tour spot"
+# When True, non-empty unrecognized transcripts are answered as questions.
+ASSUME_UNKNOWN_INSTRUCTIONS_ARE_QUESTIONS = True
 
 # Artifact naming
 TIMESTAMP_FORMAT = "%Y-%m-%d_%H-%M-%S"

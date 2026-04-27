@@ -221,7 +221,7 @@ Sections:
 - Audio: `AUDIO_SAMPLE_RATE`, `AUDIO_CHANNELS`, `AUDIO_DTYPE`
 - STT (`faster-whisper`): model size, compute type, offline-only flag, device, language, prompt, beam size
 - RAG/data: CSV path, Chroma settings, Ollama model names, retriever `k`, LLM temperature
-- Parser: `END_TOUR_EXACT_PHRASE = "end the tour spot"`
+- Parser: `END_TOUR_EXACT_PHRASE = "end the tour spot"`, `ASSUME_UNKNOWN_INSTRUCTIONS_ARE_QUESTIONS`
 - Artifacts: timestamp format and artifacts directory path
 
 Notable behavior:
@@ -297,13 +297,13 @@ Key functions:
 
 - `normalize_text(text: str) -> str`
   - Lowercases, strips punctuation except `?`, normalizes whitespace.
-- `classify_instruction_type(raw_text: str) -> str`
+- `classify_instruction_type(raw_text: str, assume_unknown_as_question: bool | None = None) -> str`
   - Exact match first for `end_tour` phrase.
   - Empty text -> `unknown`.
-  - Walk regex checks before question checks.
   - Question detection by trailing `?` or prefix.
-  - Otherwise returns `unknown`.
-- `parse_instruction(raw_text: str) -> Dict[str, object]`
+  - Walk regex checks after question checks so question text containing movement words does not advance the tour.
+  - Otherwise returns `question` when `assume_unknown_as_question` / `ASSUME_UNKNOWN_INSTRUCTIONS_ARE_QUESTIONS` is enabled, or `unknown` when disabled.
+- `parse_instruction(raw_text: str, assume_unknown_as_question: bool | None = None) -> Dict[str, object]`
   - Returns `{instruction_type, raw_text, parsed_data}`.
   - `parsed_data` is currently empty by design, but reserved for future structured extraction.
 
@@ -494,6 +494,7 @@ Validates parser behavior:
 - walk command classification
 - question classification without wake-word stripping
 - unknown fallback behavior
+- unknown-as-question toggle behavior
 
 ### `tests/test_controller.py`
 

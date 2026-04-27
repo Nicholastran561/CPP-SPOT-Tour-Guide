@@ -36,7 +36,8 @@ Parser emits exactly one of:
 Rules:
 - `end_tour` triggers only on exact phrase `end the tour spot`.
 - `walk_command` means move to the next fixed stop only.
-- `unknown` performs no action except fallback logging/printing.
+- `unknown` performs no action except fallback logging/printing when `ASSUME_UNKNOWN_INSTRUCTIONS_ARE_QUESTIONS` is disabled.
+- `ASSUME_UNKNOWN_INSTRUCTIONS_ARE_QUESTIONS` in `config.py` treats non-empty unrecognized transcripts as `question`.
 
 ### Parser keywords and phrase rules
 - Walk-command keywords/phrases: `next`, `continue`, `move on`, `walk`, `advance`, `keep going`, `go ahead`, `let's go`.
