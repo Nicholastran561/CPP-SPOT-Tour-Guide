@@ -13,10 +13,17 @@ from langchain_ollama import ChatOllama, OllamaEmbeddings
 
 from config import RAG_LLM_TEMPERATURE, RAG_RETRIEVER_K
 from rag.rag_chain import build_prompt_template
-from rag.rag_loader import CsvDataError, get_location_name_for_route_order, get_total_stops, load_locations_csv
+from rag.rag_loader import (
+    CsvDataError,
+    dataframe_to_documents,
+    get_location_name_for_route_order,
+    get_total_stops,
+    load_locations_csv,
+)
 
 LOGGER = logging.getLogger(__name__)
 RAG_CONTEXT_OUTPUT_SEPARATOR = "-" * 72
+RAG_QUESTION_OUTPUT_SEPARATOR = "=" * 72
 
 
 class RagUnavailableError(RuntimeError):
@@ -45,6 +52,38 @@ def prioritize_current_location(
     return matching + non_matching
 
 
+def get_current_location_documents(locations_df, current_location_index: int) -> List[Document]:
+    """Return full CSV-backed documents for the current tour stop."""
+    tour_stop_mask = locations_df["fact_scope"].astype(str).str.strip().str.lower() == "tour_stop"
+    current_stop_df = locations_df[
+        tour_stop_mask & (locations_df["route_order"].astype(int) == current_location_index)
+    ]
+    if current_stop_df.empty:
+        return []
+
+    documents, _ids = dataframe_to_documents(current_stop_df)
+    return documents
+
+
+def merge_unique_documents(
+    primary_docs: Iterable[Document],
+    secondary_docs: Iterable[Document],
+) -> List[Document]:
+    """Merge document groups, preserving order and removing duplicate rows."""
+    merged: List[Document] = []
+    seen = set()
+
+    for doc in [*primary_docs, *secondary_docs]:
+        doc_id = doc.metadata.get("id")
+        key = f"id:{doc_id}" if doc_id is not None else f"content:{doc.page_content}"
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(doc)
+
+    return merged
+
+
 def format_retrieved_context(docs: Iterable[Document]) -> str:
     """Render retrieved docs into compact context text."""
     chunks = []
@@ -68,6 +107,36 @@ def print_retrieved_context(context: str) -> None:
             ]
         )
     )
+
+
+def print_question(question: str) -> None:
+    """Print the user question for operator debugging."""
+    print(
+        "\n".join(
+            [
+                "",
+                RAG_QUESTION_OUTPUT_SEPARATOR,
+                "QUESTION",
+                RAG_QUESTION_OUTPUT_SEPARATOR,
+                question,
+                RAG_QUESTION_OUTPUT_SEPARATOR,
+            ]
+        )
+    )
+
+
+def remove_trailing_question_sentences(answer: str) -> str:
+    """Remove trailing model follow-up questions from an answer."""
+    text = answer.strip()
+    while text.endswith("?"):
+        sentence_start = max(text.rfind(". "), text.rfind("! "), text.rfind("\n"))
+        if sentence_start == -1:
+            return ""
+        if text[sentence_start] == "\n":
+            text = text[:sentence_start].rstrip()
+        else:
+            text = text[: sentence_start + 1].rstrip()
+    return text
 
 
 class RagService:
@@ -117,10 +186,16 @@ class RagService:
         except Exception as exc:  # noqa: BLE001
             raise RagUnavailableError(f"Retrieval failed (is Ollama running?): {exc}") from exc
 
-        # Current location context is promoted to the front to improve local relevance.
-        prioritized_docs = prioritize_current_location(docs, current_location_index)
-        context = format_retrieved_context(prioritized_docs) if prioritized_docs else ""
+        # Current location CSV details are always included so broad "what is here"
+        # questions can use the full stop description even when vector ranking is noisy.
+        current_location_docs = get_current_location_documents(
+            self.locations_df, current_location_index
+        )
+        retrieved_docs = prioritize_current_location(docs, current_location_index)
+        context_docs = merge_unique_documents(current_location_docs, retrieved_docs)
+        context = format_retrieved_context(context_docs) if context_docs else ""
         print_retrieved_context(context)
+        print_question(question)
         current_location_name = get_location_name_for_route_order(
             self.locations_df, current_location_index
         )
@@ -138,7 +213,7 @@ class RagService:
         except Exception as exc:  # noqa: BLE001
             raise RagUnavailableError(f"Answer generation failed (is Ollama available?): {exc}") from exc
 
-        final_text = str(response).strip()
+        final_text = remove_trailing_question_sentences(str(response))
         if not final_text:
             return "I am not sure, but I can try to help with another question."
 

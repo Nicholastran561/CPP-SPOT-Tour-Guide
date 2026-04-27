@@ -40,7 +40,7 @@ OLLAMA_LLM_MODEL = "llama3.1:8b"
 # Local Ollama embedding model used for vector indexing/retrieval.
 OLLAMA_EMBED_MODEL = "mxbai-embed-large"
 # Number of retrieved vector documents per query (higher = broader context, more noise risk).
-RAG_RETRIEVER_K = 4
+RAG_RETRIEVER_K = 6
 # LLM creativity/variance (0 = deterministic, higher = more diverse responses).
 RAG_LLM_TEMPERATURE = 0.0
 
@@ -57,7 +57,7 @@ TTS_STARTUP_MESSAGE = "Welcome. The SPOT tour guide is ready to begin."
 # Parser settings
 END_TOUR_EXACT_PHRASE = "end the tour spot"
 # When True, non-empty unrecognized transcripts are answered as questions.
-ASSUME_UNKNOWN_INSTRUCTIONS_ARE_QUESTIONS = False
+ASSUME_UNKNOWN_INSTRUCTIONS_ARE_QUESTIONS = True
 
 # Artifact naming
 TIMESTAMP_FORMAT = "%Y-%m-%d_%H-%M-%S"
