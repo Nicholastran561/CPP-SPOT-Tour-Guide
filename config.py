@@ -44,6 +44,16 @@ RAG_RETRIEVER_K = 4
 # LLM creativity/variance (0 = deterministic, higher = more diverse responses).
 RAG_LLM_TEMPERATURE = 0.0
 
+# TTS settings
+# Toggle speech output to the Raspberry Pi TTS client. Disabled preserves current behavior.
+TTS_ENABLED = True
+# Match TTS/host.py: the tour guide laptop listens, and TTS/tts.py connects from the Pi.
+TTS_HOST = "0.0.0.0"
+TTS_PORT = 852
+# Before the tour loop starts, wait this long for the Pi and send the startup message.
+TTS_STARTUP_WAIT_SECONDS = 5.0
+TTS_STARTUP_MESSAGE = "Welcome. The SPOT tour guide is ready to begin."
+
 # Parser settings
 END_TOUR_EXACT_PHRASE = "end the tour spot"
 # When True, non-empty unrecognized transcripts are answered as questions.

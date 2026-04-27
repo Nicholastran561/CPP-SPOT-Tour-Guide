@@ -18,6 +18,11 @@ from config import (
     OLLAMA_EMBED_MODEL,
     OLLAMA_LLM_MODEL,
     TIMESTAMP_FORMAT,
+    TTS_ENABLED,
+    TTS_HOST,
+    TTS_PORT,
+    TTS_STARTUP_MESSAGE,
+    TTS_STARTUP_WAIT_SECONDS,
     WHISPER_COMPUTE_TYPE,
     WHISPER_DEVICE,
     WHISPER_BEAM_SIZE,
@@ -29,6 +34,7 @@ from config import (
 from core.controller import handle_instruction
 from core.instruction_json import build_instruction_json, save_instruction_json
 from core.parser_rules import parse_instruction
+from core.tts_host import TtsHost
 from rag.rag_query import RagService, RagUnavailableError
 from core.transcriber import TranscriptionError, transcribe_audio
 
@@ -66,75 +72,91 @@ def main() -> None:
 
     current_location_index = 0
     LOGGER.info("SPOT offline assistant started. current_location_index=%s", current_location_index)
+    tts_host = TtsHost(TTS_HOST, TTS_PORT, enabled=TTS_ENABLED)
+    tts_host.start()
 
-    while True:
-        # One timestamp stem ties together WAV, transcript, and instruction JSON.
-        stem = _timestamp_stem()
-        wav_path = ARTIFACTS_DIR / f"{stem}.wav"
-        txt_path = ARTIFACTS_DIR / f"{stem}.txt"
-        json_path = ARTIFACTS_DIR / f"{stem}.json"
+    try:
+        if TTS_ENABLED and TTS_STARTUP_MESSAGE:
+            # Give the Pi client a short window to connect before the first narration.
+            if tts_host.wait_for_connection(TTS_STARTUP_WAIT_SECONDS):
+                tts_host.send_text(TTS_STARTUP_MESSAGE)
+            else:
+                LOGGER.warning(
+                    "Pi TTS client did not connect within %.1f seconds; starting tour anyway.",
+                    TTS_STARTUP_WAIT_SECONDS,
+                )
 
-        try:
-            # Record synchronously so downstream steps always work from saved audio.
-            record_until_space_toggle(
-                output_path=wav_path,
-                sample_rate=AUDIO_SAMPLE_RATE,
-                channels=AUDIO_CHANNELS,
-                dtype=AUDIO_DTYPE,
+        while True:
+            # One timestamp stem ties together WAV, transcript, and instruction JSON.
+            stem = _timestamp_stem()
+            wav_path = ARTIFACTS_DIR / f"{stem}.wav"
+            txt_path = ARTIFACTS_DIR / f"{stem}.txt"
+            json_path = ARTIFACTS_DIR / f"{stem}.json"
+
+            try:
+                # Record synchronously so downstream steps always work from saved audio.
+                record_until_space_toggle(
+                    output_path=wav_path,
+                    sample_rate=AUDIO_SAMPLE_RATE,
+                    channels=AUDIO_CHANNELS,
+                    dtype=AUDIO_DTYPE,
+                )
+            except ExitRequestedError:
+                LOGGER.info("ESC pressed while waiting to record. Exiting main loop.")
+                break
+            except RecordingError as exc:
+                LOGGER.error("Recording failed: %s", exc)
+                continue
+
+            try:
+                # Transcribe from file to keep the pipeline reproducible per run.
+                transcript = transcribe_audio(
+                    audio_path=wav_path,
+                    model_size=WHISPER_MODEL_SIZE,
+                    compute_type=WHISPER_COMPUTE_TYPE,
+                    local_files_only=WHISPER_LOCAL_FILES_ONLY,
+                    device=WHISPER_DEVICE,
+                    language=WHISPER_LANGUAGE,
+                    initial_prompt=WHISPER_INITIAL_PROMPT,
+                    beam_size=WHISPER_BEAM_SIZE,
+                )
+                _save_transcript(transcript, txt_path)
+            except TranscriptionError as exc:
+                LOGGER.error("Transcription failed: %s", exc)
+                # Keep a placeholder transcript file so operators can correlate artifacts.
+                txt_path.write_text("", encoding="utf-8")
+                continue
+
+            # Parse to one of the fixed command types before dispatch.
+            parsed = parse_instruction(transcript)
+            instruction = build_instruction_json(
+                instruction_type=str(parsed["instruction_type"]),
+                raw_text=transcript,
+                parsed_data=dict(parsed.get("parsed_data", {})),
             )
-        except ExitRequestedError:
-            LOGGER.info("ESC pressed while waiting to record. Exiting main loop.")
-            break
-        except RecordingError as exc:
-            LOGGER.error("Recording failed: %s", exc)
-            continue
 
-        try:
-            # Transcribe from file to keep the pipeline reproducible per run.
-            transcript = transcribe_audio(
-                audio_path=wav_path,
-                model_size=WHISPER_MODEL_SIZE,
-                compute_type=WHISPER_COMPUTE_TYPE,
-                local_files_only=WHISPER_LOCAL_FILES_ONLY,
-                device=WHISPER_DEVICE,
-                language=WHISPER_LANGUAGE,
-                initial_prompt=WHISPER_INITIAL_PROMPT,
-                beam_size=WHISPER_BEAM_SIZE,
+            try:
+                # Persist exactly what controller receives for audit/debug.
+                save_instruction_json(instruction, json_path)
+            except Exception as exc:  # noqa: BLE001
+                LOGGER.error("Instruction JSON write failed: %s", exc)
+                continue
+
+            # Dispatch immediately using in-memory instruction object.
+            result = handle_instruction(
+                instruction=instruction,
+                current_location_index=current_location_index,
+                question_handler=rag_service.answer_question,
+                narration_handler=tts_host.send_text if TTS_ENABLED else None,
             )
-            _save_transcript(transcript, txt_path)
-        except TranscriptionError as exc:
-            LOGGER.error("Transcription failed: %s", exc)
-            # Keep a placeholder transcript file so operators can correlate artifacts.
-            txt_path.write_text("", encoding="utf-8")
-            continue
+            current_location_index = result.updated_location_index
 
-        # Parse to one of the fixed command types before dispatch.
-        parsed = parse_instruction(transcript)
-        instruction = build_instruction_json(
-            instruction_type=str(parsed["instruction_type"]),
-            raw_text=transcript,
-            parsed_data=dict(parsed.get("parsed_data", {})),
-        )
+            if result.end_tour:
+                break
 
-        try:
-            # Persist exactly what controller receives for audit/debug.
-            save_instruction_json(instruction, json_path)
-        except Exception as exc:  # noqa: BLE001
-            LOGGER.error("Instruction JSON write failed: %s", exc)
-            continue
-
-        # Dispatch immediately using in-memory instruction object.
-        result = handle_instruction(
-            instruction=instruction,
-            current_location_index=current_location_index,
-            question_handler=rag_service.answer_question,
-        )
-        current_location_index = result.updated_location_index
-
-        if result.end_tour:
-            break
-
-    LOGGER.info("Main loop ended.")
+    finally:
+        tts_host.close()
+        LOGGER.info("Main loop ended.")
 
 
 if __name__ == "__main__":
