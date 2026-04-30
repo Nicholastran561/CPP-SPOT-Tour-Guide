@@ -174,3 +174,68 @@ Pytest is configured via `pytest.ini` to:
 - Future context window support: keep a short sliding history of recent Q/A turns (for follow-up questions) and pass it into `rag/rag_query.py` + `rag/rag_chain.py` from `main.py`.
 
 No real SPOT control and no TTS are implemented in this prototype.
+
+# Navigation
+## How it Works
+In order to get SPOT to move around the space, a static map was made to define the key points SPOT needed to go. This map directory is located in `navigation/maps/downloaded_graph`. During runtime, the RAG system will update an index value that correlates to a waypoint ID specified on the map. SPOT can dynamically adjust its path based on obstacles it encounters while maintaining its static map route.
+## How the map was created
+<img width="1082" height="774" alt="image" src="https://github.com/user-attachments/assets/a03df5f5-0123-4fdc-944b-d8ce172fba78" />
+
+  - 1 anchor at the start, due to the small map size
+  - 5 fiducials around a square room
+  - 2-3 waypoints created between fiducials to allow pausing if space next to the fiducial is occupied
+_see graphnav section for more details_
+## Implementation
+`navigation/tour_nav.py` is a graphnav wrapper that automates terminal commands to navigate directly to a specified waypoint given the ID. IDs are retrieved from the visual map.
+<img width="1082" height="774" alt="image" src="https://github.com/user-attachments/assets/8a6a9b90-f36b-4206-8151-480f821cd0e8" />
+For example, `waypoint_14` correlates to the south-most waypoint in the room.
+### Using Wrapper
+After initializing `GraphNavWrapper`, simply use `navigate_to(<waypoint_id>)` to navigate to the specified waypoint.
+```python
+G = GraphNavWrapper(robot, "navigation/maps/downloaded_graph")
+G.navitage_to("waypoint_1")
+```
+**Important Notes**: `robot` is the Boston Dynamics auth used to connect to the robot. If the variable is passed into the class, it will attempt to authenticate on initialization. 
+#### Example
+`GraphNavWrapper(map_path=...)` <br>
+Initialize Wrapper -> authenticate robot connect (user & password) -> ... -> `navigate_to('waypoint_14')` <br>
+Spot will first require you to type your username and password to navigate to waypoint_14 defined on the map. This flow is meant to test the wrapper as a stand-alone program. Larger programs would need to authenticate Spot and perform other tasks before navigating.
+```python
+sdk = bosdyn.client.create_standard_sdk('GraphNavClient')
+robot = sdk.create_robot("192.168.80.3")
+GraphNavWrapper(robot=robot, map_path=...)
+```
+Authenticate robot connect (user & password) -> ... -> Initialize Wrapper -> ... -> `navigate_to('waypoint_14')` <br>
+The program can authenticate at any point, run any operation, then initialize the wrapper and navigate to waypoint_14. This flow is essential for larger-scale systems.
+### How to use `navigate_to(waypoint)`
+`navigate_to(waypoint)`
+waypoint: can be filled with any of the following names.
+
+Quick Example:
+```python
+navigate_to("waypoint_1")
+```
+
+## GraphNav
+The SpotSDK connects onboard stereo cameras and inertial odometry to create a 3D point cloud of its surroundings. GraphNav processes this point cloud into a series of waypoints and edges. <br>
+### Map Creation
+#### Waypoints
+Waypoints are IDs associated with a location where SPOT takes a "snapshot" of the point cloud. They are created automatically every 2 meters (or less, depending on the path's curvature), but can also be created manually using `CreateWaypoint` during recording. You can edit a pre-recorded map if you enable GPS while recording it. Manually defining a waypoint is useful if you have a specific location where you want SPOT to perform an action.
+#### Edges
+Edges are the specific directions SPOT needs to go to reach a waypoint. They're created automatically between waypoints, or manually using `CreateEdge`.
+### Recording a Map
+By using the `recording_command_line` graphnav example in the SDK, you can control Spot using the controller and select recording options like "Create Waypoint", "Start Recording", "Download Recording", Etc. Downloading the recording saves it to whatever path you specified when running the command. 
+### Map Processing
+When recording your map, Spot will create it in a "Chain" topology. This means it has a start and an end node and will attempt to traverse from the start to the finish. 
+#### Loop Closure
+If you need Spot to continue after completing its path, the start and end nodes must be connected. GraphNav has a tool that automatically closes a loop if it encounters the same fiducial more than once, or if it walks less than 50 meters and arrives at the same position.
+#### Anchoring
+Anchoring maps a fiducial or waypoint to the **global map**. As Spot navigates the waypoints normally, it estimates its position relative to the starting node, a technique known as dead reckoning. As Spot gets farther and farther from the starting node, it gets less and less accurate. This is because GraphNav creates an anchor by default at the start node. So, for longer travel distances, setting multiple anchors increases positional and map accuracy.
+#### Ensuring Good Maps
+  - Large maps need more fiducials to better connect waypoints together
+  - Large maps also need more anchors to increase movement precision
+  - Each floor needs a fiducial
+  - get as close to the fiducials as you can while recording
+  - record multiple different paths to a significant waypoint to increase path options
+## Future Improvements
+For a real-world tour guide scenario. The map would require more waypoints, fiducials, and anchors to create a large, accurate map. Real scenarios would also include multiple Spots working on the same map. This would require significant changes to waypoint validation so more than one Spot wouldn't appear at the same place. 
