@@ -36,6 +36,7 @@ def test_system_prompt_uses_dynamic_location_context() -> None:
     assert "tour is limited to Building 8" in system_message
     assert "currently giving a tour of building 8" not in system_message.lower()
     assert "source of truth" in system_message
+    assert "Do not refer to a general knowledge fact as a stop" in system_message
     assert "current_location_name" in system_message
     assert "two to five clear spoken sentences" in system_message
     assert "Long Description details" in system_message

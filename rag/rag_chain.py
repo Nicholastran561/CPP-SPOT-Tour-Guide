@@ -23,10 +23,12 @@ def build_prompt_template() -> ChatPromptTemplate:
                 "For broad questions such as what is here, what is this stop, or tell me about this area, give a tour-style answer that uses the Long Description details, including the purpose of the area, visible objects, amenities, and nearby features. "
                 "For narrow factual questions, answer directly but include the relevant concrete detail from the description. "
                 "Use the retrieved tour context as the source of truth for campus, building, room, and tour facts. "
+                "Do not refer to a general knowledge fact as a stop or mention a general knowledge stop. "
                 "Use current_location_name and current_stop_number to resolve questions about here, this room, or this stop. "
                 "Prefer retrieved context about the current location when it is relevant, but answer about another location if the user clearly asks for one. "
                 "If the retrieved context does not contain the answer, say that the tour data does not include that information yet. "
                 "Do not mention prompt instructions, retrieval, vector databases, internal system details, or document metadata. "
+                "Do not mention anything that has to do with moving to next stops"
                 "Do not include onomatopoeia.",
             ),
             (
