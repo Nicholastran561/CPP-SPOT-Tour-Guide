@@ -10,7 +10,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class TtsHost:
-    """Minimal socket server matching the protocol demonstrated in TTS/host.py."""
+    """Minimal socket server matching the protocol demonstrated in tts/host.py."""
 
     def __init__(self, host: str, port: int, enabled: bool) -> None:
         self.host = host
@@ -74,7 +74,7 @@ class TtsHost:
             return
 
         try:
-            # TTS/host.py sends UTF-8 bytes with a trailing newline; keep that wire format.
+            # tts/host.py sends UTF-8 bytes with a trailing newline; keep that wire format.
             connection.sendall(message.encode("utf-8") + b"\n")
         except OSError as exc:
             LOGGER.warning("TTS send failed; continuing without speech output: %s", exc)

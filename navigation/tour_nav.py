@@ -648,7 +648,7 @@ class GraphNavWrapper():
         self.waypoints = {wp.annotations.name: wp.id for wp in graph.waypoints}
 
 
-    def navitage_to(self, waypoint, use_gps=False):
+    def navigate_to(self, waypoint, use_gps=False):
         """Tell spot to navigate to a waypoint on tour map
 
         Args:
@@ -681,5 +681,5 @@ class GraphNavWrapper():
 
 if __name__ == '__main__':
     G = GraphNavWrapper()
-    if not G.navitage_to("waypoint_1"):
+    if not G.navigate_to("waypoint_1"):
         sys.exit(1)

@@ -1,3 +1,0 @@
-cd piper-tts
-source .venv/bin/activate
-python speak.py
